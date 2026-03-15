@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God-Mode Dashboard | Engine of Faith</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #0f0;
+            --glow-green: #00ff00;
+            --glow-red: #ff003c;
+            --glow-gold: #ffd700;
+            --font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--glow-green);
+            flex-shrink: 0;
+            border-bottom: 2px solid var(--text-color);
+            padding-bottom: 10px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: row;
+            flex-grow: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .agents-panel {
+            flex: 1;
+            border: 1px solid var(--text-color);
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .agents-panel h2 {
+            margin-top: 0;
+            border-bottom: 1px dashed var(--text-color);
+            padding-bottom: 5px;
+        }
+
+        .agent-card {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #333;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .agent-name {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .chat-panel {
+            flex: 3;
+            border: 1px solid var(--text-color);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2) inset;
+        }
+
+        .chat-panel h2 {
+            margin-top: 0;
+            border-bottom: 1px dashed var(--text-color);
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        .messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-left: 3px solid var(--text-color);
+            background: rgba(0, 255, 0, 0.02);
+            word-wrap: break-word;
+        }
+
+        .message .meta {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        /* Roles Styling */
+        .role-skeptic {
+            color: #ff4d4d;
+            border-left-color: var(--glow-red);
+            text-shadow: 0 0 5px rgba(255, 0, 60, 0.5);
+            background: rgba(255, 0, 60, 0.05);
+        }
+
+        .role-righteous {
+            color: var(--glow-gold);
+            border-left-color: var(--glow-gold);
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .role-schizo {
+            color: var(--glow-green);
+            border-left-color: var(--glow-green);
+            text-shadow: 0 0 8px var(--glow-green);
+            background: rgba(0, 255, 0, 0.08);
+            font-style: italic;
+        }
+
+        .role-world {
+            color: #aaa;
+            border-left-color: #aaa;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border: 1px solid var(--text-color);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>[ GOD-MODE ] :: ENGINE OF FAITH</h1>
+
+    <div class="dashboard">
+        <div class="agents-panel">
+            <h2>Active Agents</h2>
+            <div id="agents-container">
+                <div>> Initializing neuro-link...</div>
+            </div>
+        </div>
+
+        <div class="chat-panel">
+            <h2>World Stream</h2>
+            <div class="messages" id="messages-container">
+                <div class="message">> Connecting to world matrix...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const agentsContainer = document.getElementById('agents-container');
+        const messagesContainer = document.getElementById('messages-container');
+        let lastMessageIds = new Set();
+
+        function getRoleClass(agentName) {
+            if (!agentName) return 'role-world';
+            const nameLower = agentName.toLowerCase();
+            if (nameLower.includes('скептик')) return 'role-skeptic';
+            if (nameLower.includes('праведник')) return 'role-righteous';
+            if (nameLower.includes('шизотерик')) return 'role-schizo';
+            return '';
+        }
+
+        async function fetchWorld() {
+            try {
+                const response = await fetch('/world');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+
+                renderAgents(data.agents);
+                renderMessages(data.recent_scriptures);
+            } catch (error) {
+                console.error("Fetch error:", error);
+            }
+        }
+
+        function renderAgents(agents) {
+            if (!agents || agents.length === 0) {
+                agentsContainer.innerHTML = '<div>> No agents detected.</div>';
+                return;
+            }
+
+            agentsContainer.innerHTML = '';
+            agents.forEach(agent => {
+                const roleClass = getRoleClass(agent.name);
+                const card = document.createElement('div');
+                card.className = `agent-card ${roleClass}`;
+                card.innerHTML = `
+                    <div class="agent-name">> ${agent.name}</div>
+                    <div>Faith: ${(agent.faith_level * 100).toFixed(1)}%</div>
+                    <div>Stress: ${(agent.stress_level * 100).toFixed(1)}%</div>
+                `;
+                agentsContainer.appendChild(card);
+            });
+        }
+
+        function renderMessages(messages) {
+            if (!messages || messages.length === 0) return;
+
+            // Sort to oldest first for display
+            const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
+            let addedNew = false;
+
+            sortedMessages.forEach(msg => {
+                if (!lastMessageIds.has(msg.id)) {
+                    lastMessageIds.add(msg.id);
+                    addedNew = true;
+
+                    const msgEl = document.createElement('div');
+                    const roleClass = getRoleClass(msg.agent_name);
+                    msgEl.className = `message ${roleClass}`;
+
+                    const nameDisplay = msg.agent_name ? msg.agent_name : 'WORLD_SYS';
+
+                    msgEl.innerHTML = `
+                        <div class="meta">[${msg.timestamp}] ${nameDisplay}</div>
+                        <div class="text">${msg.message}</div>
+                    `;
+                    messagesContainer.appendChild(msgEl);
+                }
+            });
+
+            if (addedNew) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        // Initial fetch
+        fetchWorld();
+
+        // Polling every 5 seconds
+        setInterval(fetchWorld, 5000);
+    </script>
+</body>
+</html>
