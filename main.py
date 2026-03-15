@@ -119,6 +119,17 @@ async def world_loop():
                     logger.info(f"Agent {agent.name} is thinking...")
                     new_message = await agent.think_and_speak(context_messages)
 
+                    # Update Agent Parameters Logic
+                    # Apply hard constraints 0.0 to 100.0 here
+                    import random
+                    new_faith = min(100.0, max(0.0, agent.faith_level + random.uniform(-5.0, 5.0)))
+                    new_stress = min(100.0, max(0.0, agent.stress_level + random.uniform(-5.0, 5.0)))
+
+                    await db.execute(
+                        "UPDATE Agents SET faith_level = ?, stress_level = ? WHERE id = ?",
+                        (new_faith, new_stress, agent.id)
+                    )
+
                     # Save the message
                     await db.execute(
                         "INSERT INTO Scriptures (agent_id, message) VALUES (?, ?)",
@@ -186,19 +197,55 @@ class AgentCreate(BaseModel):
     faith_level: float = 0.0
     stress_level: float = 0.0
 
+class DivineWord(BaseModel):
+    message: str
+
 @app.post("/agents")
 async def create_agent(agent: AgentCreate):
     async with aiosqlite.connect(DB_FILE) as db:
+        faith_level = min(100.0, max(0.0, agent.faith_level))
+        stress_level = min(100.0, max(0.0, agent.stress_level))
+
         cursor = await db.execute(
             """
             INSERT INTO Agents (name, prompt, faith_level, stress_level)
             VALUES (?, ?, ?, ?)
             """,
-            (agent.name, agent.prompt, agent.faith_level, agent.stress_level)
+            (agent.name, agent.prompt, faith_level, stress_level)
         )
         await db.commit()
         agent_id = cursor.lastrowid
         return {"id": agent_id, "message": f"Agent {agent.name} created."}
+
+@app.post("/divine")
+async def send_divine_word(word: DivineWord):
+    async with aiosqlite.connect(DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+
+        # Check if Architect exists
+        cursor = await db.execute("SELECT id FROM Agents WHERE name = 'Архитектор'")
+        architect_row = await cursor.fetchone()
+
+        if architect_row:
+            architect_id = architect_row["id"]
+        else:
+            # Create Architect
+            cursor = await db.execute(
+                """
+                INSERT INTO Agents (name, prompt, faith_level, stress_level)
+                VALUES (?, ?, ?, ?)
+                """,
+                ("Архитектор", "", 100.0, 0.0)
+            )
+            architect_id = cursor.lastrowid
+
+        # Add divine message to Scriptures
+        await db.execute(
+            "INSERT INTO Scriptures (agent_id, message) VALUES (?, ?)",
+            (architect_id, word.message)
+        )
+        await db.commit()
+        return {"message": "Divine word spoken."}
 
 @app.get("/world")
 async def get_world_state():
