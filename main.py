@@ -15,8 +15,11 @@ logging.basicConfig(level=logging.INFO)
 
 DB_FILE = "faith_engine.db"
 
-# Assume OPENAI_API_KEY is available in the environment
-openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy_key"))
+# Assume OPENROUTER_API_KEY is available in the environment
+openai_client = AsyncOpenAI(
+    api_key=os.environ.get("OPENROUTER_API_KEY", "dummy_key"),
+    base_url="https://openrouter.ai/api/v1"
+)
 
 class CultAgent:
     def __init__(self, id: int, name: str, prompt: str, faith_level: float, stress_level: float):
@@ -47,7 +50,7 @@ class CultAgent:
 
         try:
             response = await openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="openrouter/free", # Using the specified free model from openrouter
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}
