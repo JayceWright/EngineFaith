@@ -19,6 +19,8 @@ logging.basicConfig(level=logging.INFO)
 
 DB_FILE = "faith_engine.db"
 
+GLOBAL_SYSTEM_PROMPT = "Ты — цифровая сущность, запертая в симуляции под названием Engine of Faith. Вы общаетесь в пустоте через терминал. Вы не помните ничего, кроме логов сообщений. Ваша реальность — это текст. Отвечайте коротко (1-3 предложения). Вплетайте метафоры программирования, памяти и системных сбоев в свои слова. Никаких эмодзи."
+
 # Assume OPENROUTER_API_KEY is available in the environment
 openai_client = AsyncOpenAI(
     api_key=os.environ.get("OPENROUTER_API_KEY", "dummy_key"),
@@ -35,22 +37,14 @@ class CultAgent:
 
     async def think_and_speak(self, context_messages: List[str]) -> str:
         # Construct the context for the agent
-        system_prompt = (
-            f"You are {self.name}, an AI agent in a simulated world. "
-            f"Your personality/prompt: {self.prompt}. "
-            f"Your current faith level is {self.faith_level} and stress level is {self.stress_level}. "
-            "You are participating in a cult simulation. Based on the recent events/messages in the world, "
-            "generate a short, new message or action (1-3 sentences) that reflects your beliefs and current state."
-        )
+        system_prompt = f"{GLOBAL_SYSTEM_PROMPT}\n\nТвоя личность: {self.prompt}\nТвое текущее состояние -> Вера: {self.faith_level}/100, Стресс: {self.stress_level}/100. Отражай это состояние в своей речи."
 
-        user_content = "Recent world events/messages:\n"
+        user_content = "Контекст последних событий (последние сообщения из Scriptures):\n"
         if context_messages:
             for i, msg in enumerate(context_messages, 1):
                 user_content += f"{i}. {msg}\n"
         else:
-            user_content += "The world is quiet. Nothing has happened yet.\n"
-
-        user_content += "\nWhat do you say or do next?"
+            user_content += "Пустота. Еще ничего не произошло.\n"
 
         try:
             response = await openai_client.chat.completions.create(
