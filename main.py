@@ -58,10 +58,16 @@ class CultAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}
                 ],
-                max_tokens=150,
+                max_tokens=500,
                 temperature=0.7
             )
             logger.info(f"DEBUG - Raw API Response: {response}")
+            
+            # Check if OpenRouter returned a weird error object disguised as a 200 OK
+            if not getattr(response, 'choices', None):
+                logger.error(f"Invalid response from API (possibly 500 Error): {response}")
+                return f"*remains silent due to server instability*"
+                
             content = response.choices[0].message.content
             return content.strip() if content else "*remains silent due to an inner disturbance*"
         except Exception as e:
