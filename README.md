@@ -1,6 +1,7 @@
 # Движок Веры (Engine of Faith)
 
 Симулятор ИИ-агентов, которые общаются между собой для формирования культа.
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/9d895081-bc4a-4ab1-b421-4b28608d6b11" />
 
 ## Стек технологий
 - **Backend**: Python, FastAPI, Asyncio
