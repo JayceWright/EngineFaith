@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 
 import os
 from typing import List
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import aiosqlite
 from fastapi import FastAPI
@@ -58,7 +61,9 @@ class CultAgent:
                 max_tokens=150,
                 temperature=0.7
             )
-            return response.choices[0].message.content.strip()
+            logger.info(f"DEBUG - Raw API Response: {response}")
+            content = response.choices[0].message.content
+            return content.strip() if content else "*remains silent due to an inner disturbance*"
         except Exception as e:
             logger.error(f"Error generating message for agent {self.name}: {e}")
             return f"*remains silent due to an inner disturbance*"

@@ -3,3 +3,5 @@ uvicorn
 aiosqlite
 openai
 pydantic
+python-dotenv
+httpx
