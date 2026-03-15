@@ -10,6 +10,7 @@ load_dotenv()
 
 import aiosqlite
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 
@@ -224,6 +225,4 @@ async def get_world_state():
             "recent_scriptures": scriptures
         }
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the Engine of Faith"}
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
